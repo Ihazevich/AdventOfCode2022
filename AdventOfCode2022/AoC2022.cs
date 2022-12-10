@@ -1,61 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Terminal.Gui;
 
 namespace AdventOfCode2022
 {
     public class AoC2022
     {
-        public static void Day1()
+        public const int DAYS = 10;
+
+        public static Tuple<string, string> DayX(string input)
         {
-            Console.WriteLine("Advent Challenge 1");
+            var file = File.ReadAllLines(input);
 
-            var file = File.ReadAllLines("input1.txt");
 
-            var elves = new List<int>();
+            var part1 = $"";
+            var part2 = $"";
 
+            return new Tuple<string, string>(part1, part2);
+        }
+
+        public static Tuple<string, string> Day1(string input)
+        {
+            var file = File.ReadAllLines(input);
             var currentElf = 0;
+            int[] top3  = { 0, 0 , 0 };
 
             foreach (var line in file)
             {
-
                 if (int.TryParse(line, out int i))
                 {
                     currentElf += i;
                 }
                 else
                 {
-                    elves.Add(currentElf);
-                    Console.WriteLine($"New elf! Total: {currentElf}");
+                    if (currentElf > top3[2])
+                    {
+                        top3[0] = top3[1];
+                        top3[1] = top3[2];
+                        top3[2] = currentElf;
+                    }
                     currentElf = 0;
                 }
             }
 
-            var maxElf = 0;
+            var part1 = $"{top3[2]}";
+            var part2 = $"{top3[0] + top3[1] + top3[2]}";
 
-            foreach (var elf in elves)
-            {
-                if (elf > maxElf)
-                {
-                    maxElf = elf;
-                }
-            }
-
-            var topElves = elves.OrderByDescending(x => x).ToList();
-
-            Console.WriteLine($"The max elf is: {maxElf}");
-            Console.WriteLine($"The top three elves are {topElves[0]},{topElves[1]},{topElves[2]}");
-            Console.WriteLine($"The total of the top three is {topElves[0] + topElves[1] + topElves[2]}");
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day2()
+        public static Tuple<string, string> Day2(string input)
         {
-            var file = File.ReadAllLines("input2.txt");
+            var file = File.ReadAllLines(input);
 
             var totalScore = 0;
             var totalExpectedScore = 0;
@@ -67,11 +70,8 @@ namespace AdventOfCode2022
 
                 var enemyScore = enemyMove == 'A' ? 1 : enemyMove == 'B' ? 2 : enemyMove == 'C' ? 3 : -1;
                 var myScore = myMove == 'X' ? 1 : myMove == 'Y' ? 2 : myMove == 'Z' ? 3 : -1;
-
-
                 var matchScore = ((enemyScore == 1 && myScore == 3) || (enemyScore == 2 && myScore == 1) || (enemyScore == 3 && myScore == 2)) ? 0 : enemyScore == myScore ? 3 : 6;
 
-                Console.WriteLine($"My score {myScore} - {enemyScore}: {myScore + matchScore}");
                 totalScore += matchScore + myScore;
 
                 var expectedResult = myScore;
@@ -91,47 +91,19 @@ namespace AdventOfCode2022
                 }
 
                 var expectedMatchScore = myScore == 1 ? 0 : myScore == 2 ? 3 : 6;
-
                 totalExpectedScore += expectedScore + expectedMatchScore;
-
             }
-            Console.WriteLine($"Total Score:{totalScore}");
-            Console.WriteLine($"Total Expected Score:{totalExpectedScore}");
+
+            var part1 = $"{totalScore}";
+            var part2 = $"{totalExpectedScore}";
+
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day3()
+        public static Tuple<string, string> Day3(string input)
         {
-            var rucksacks = File.ReadAllLines("2022input3.txt");
+            var rucksacks = File.ReadAllLines(input);
             var totalPriority = 0;
-            object keyAndLock = new();
-
-            /**
-            Parallel.ForEach(rucksacks, rucksack =>
-            {
-                var items = rucksack.Length/2;
-
-                for(var i = 0; i < items; i++)
-                {
-                    if (rucksack[i] == rucksack[items + i])
-                    {
-                        var priority = 0;
-                        if ((int)rucksack[i] > 90)
-                        {
-                            priority = (int)rucksack[i] - 96;
-                        }
-                        else
-                        {
-                            priority = (int)rucksack[i] - 38;
-                        }
-                        Console.WriteLine($"Found item {rucksack[i]} with priority {priority} in \n {rucksack.Substring(0,items)} \n {rucksack.Substring(items)}");
-                        
-                        Interlocked.Add(ref totalPriority, priority);
-                    }
-                }
-            });
-            **/
-
-            var counter = 0;
 
             // Part 1
             foreach (var rucksack in rucksacks)
@@ -158,8 +130,6 @@ namespace AdventOfCode2022
                             {
                                 priority = (int)secondCompartment[i] - 38;
                             }
-                            counter++;
-                            Console.WriteLine($"{counter}/{rucksacks.Length} - Found item {item} with priority {priority} in \n {firstCompartment} \n {secondCompartment}");
 
                             totalPriority += priority;
                             found = true;
@@ -170,12 +140,6 @@ namespace AdventOfCode2022
                     {
                         break;
                     }
-                }
-
-                if (!found)
-                {
-                    counter++;
-                    Console.WriteLine($"{counter}/{rucksacks.Length} - Repeated item not found in \n {rucksack.Substring(0, items)} \n {rucksack.Substring(items)}");
                 }
             }
 
@@ -216,82 +180,69 @@ namespace AdventOfCode2022
                 }
             });
 
-            Console.WriteLine($"Sum of priorities is: {totalPriority}");
-            Console.WriteLine($"Sum of p2 priorities is: {totalPriority2}");
+            var part1 = $"{totalPriority}";
+            var part2 = $"{totalPriority2}";
+
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day4()
+        public static Tuple<string, string> Day4(string input)
         {
-            var assignments = File.ReadAllLines("2022input4.txt");
+            var assignments = File.ReadAllLines(input);
 
             var totalOverlaps = 0;
             var partialOverlaps = 0;
 
             foreach (var assignment in assignments)
             {
-                var elf1Min = assignment.Substring(0, assignment.IndexOf('-'));
-                var elf1Max = assignment.Substring(assignment.IndexOf('-') + 1, assignment.IndexOf(',') - assignment.IndexOf('-') - 1);
+                var elf1Min = int.Parse(assignment.Substring(0, assignment.IndexOf('-')));
+                var elf1Max = int.Parse(assignment.Substring(assignment.IndexOf('-') + 1, assignment.IndexOf(',') - assignment.IndexOf('-') - 1));
 
-                var elf2Min = assignment.Substring(assignment.IndexOf(',') + 1, assignment.LastIndexOf('-') - assignment.IndexOf(',') - 1);
-                var elf2Max = assignment.Substring(assignment.LastIndexOf('-') + 1, assignment.Length - 1 - assignment.LastIndexOf('-'));
+                var elf2Min = int.Parse(assignment.Substring(assignment.IndexOf(',') + 1, assignment.LastIndexOf('-') - assignment.IndexOf(',') - 1));
+                var elf2Max = int.Parse(assignment.Substring(assignment.LastIndexOf('-') + 1, assignment.Length - 1 - assignment.LastIndexOf('-')));
 
-                Console.WriteLine($"{elf1Min} to {elf1Max} and {elf2Min} to {elf2Max}");
-
-                var first = false;
-                var second = false;
-
-                if (int.Parse(elf1Min) <= int.Parse(elf2Min) && int.Parse(elf1Max) >= int.Parse(elf2Max))
+                if (elf1Min <= elf2Min && elf1Max >= elf2Max)
                 {
                     totalOverlaps++;
                     partialOverlaps++;
-                    Console.WriteLine("-1 contains 2!");
-                    first = true;
                 }
-                else if (int.Parse(elf2Min) <= int.Parse(elf1Min) && int.Parse(elf2Max) >= int.Parse(elf1Max))
+                else if ((elf2Min <= elf1Min) && (elf2Max >= elf1Max))
                 {
                     totalOverlaps++;
-                    Console.WriteLine("-2 contains 1!");
                     partialOverlaps++;
-                    second = true;
                 }
-
-                //Console.WriteLine($"-Total complete overlaps: {totalOverlaps}");
-
-                // Part 2
-
-                else if (int.Parse(elf1Min) >= int.Parse(elf2Min) && int.Parse(elf1Min) <= int.Parse(elf2Max))
+                else if (elf1Min >= elf2Min && elf1Min <= elf2Max)
                 {
                     partialOverlaps++;
-                    Console.WriteLine("--1 partially overlaps 2!");
                 }
-                else if (int.Parse(elf1Max) <= int.Parse(elf2Max) && int.Parse(elf1Max) >= int.Parse(elf2Min))
+                else if (elf1Max <= elf2Max && elf1Max >= elf2Min)
                 {
                     partialOverlaps++;
-                    Console.WriteLine("--1 partially overlaps 2!");
                 }
-                else if (int.Parse(elf2Min) >= int.Parse(elf1Min) && int.Parse(elf2Min) <= int.Parse(elf1Max))
+                else if (elf2Min >= elf1Min && elf2Min <= elf1Max)
                 {
                     partialOverlaps++;
-                    Console.WriteLine("--2 partially overlaps 1!");
                 }
-                else if (int.Parse(elf2Max) <= int.Parse(elf1Max) && int.Parse(elf2Max) >= int.Parse(elf1Min))
+                else if (elf2Max <= elf1Max && elf2Max >= elf1Min)
                 {
                     partialOverlaps++;
-                    Console.WriteLine("--2 partially overlaps 1!");
                 }
-
-                Console.WriteLine($"---Total partial overlaps: {partialOverlaps}");
             }
+
+            var part1 = $"{totalOverlaps}";
+            var part2 = $"{partialOverlaps}";
+
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day5()
+        public static Tuple<string, string> Day5(string input)
         {
-            var instructions = File.ReadAllLines("2022input5.txt");
-
+            var instructions = File.ReadAllLines(input);
 
             var stacksNumberLine = 0;
             var numberOfStacks = 0;
-            var stacks = new List<List<char>>();
+            var stacksPart1 = new List<List<char>>();
+            var stacksPart2 = new List<List<char>>();
 
             foreach (var instruction in instructions)
             {
@@ -305,7 +256,8 @@ namespace AdventOfCode2022
 
             for (int i = 0; i < numberOfStacks; i++)
             {
-                stacks.Add(new List<char>());
+                stacksPart1.Add(new List<char>());
+                stacksPart2.Add(new List<char>());
             }
 
             for (int i = stacksNumberLine - 2; i >= 0; i--)
@@ -319,23 +271,11 @@ namespace AdventOfCode2022
                         var box = instruction[(j * 4) + 1];
                         if (box.ToString() != " ")
                         {
-                            stacks[j].Add(instructions[i][(j * 4) + 1]);
+                            stacksPart1[j].Add(instructions[i][(j * 4) + 1]);
+                            stacksPart2[j].Add(instructions[i][(j * 4) + 1]);
                         }
                     }
                 }
-            }
-
-            var counter = 0;
-            foreach (var stack in stacks)
-            {
-                counter++;
-                Console.WriteLine($"Stack {counter}");
-                foreach (var box in stack)
-                {
-                    Console.Write($"[{box}] - ");
-                }
-                Console.Write($" Last: {stack.Last()}");
-                Console.WriteLine();
             }
 
             for (int i = stacksNumberLine; i < instructions.Length; i++)
@@ -348,100 +288,60 @@ namespace AdventOfCode2022
                     var from = int.Parse(instruction.Substring(instruction.LastIndexOf('m') + 1, instruction.IndexOf('t') - 1 - (instruction.LastIndexOf('m') + 1)));
                     var to = int.Parse(instruction.Substring(instruction.LastIndexOf('o') + 1));
 
-                    Console.WriteLine($"move {qty} from {from} to {to}");
-
-                    /**
-                     * Part 1
-                    while(qty > 0)
+                    // Part 1
+                    var tempqty = qty;
+                    while(tempqty > 0)
                     {
-                        var movingbox = stacks[from - 1].Last();
-                        Console.WriteLine($"moving {movingbox} from {from} to {to}");
-                        stacks[to - 1].Add(movingbox);
-                        stacks[from - 1].RemoveAt(stacks[from -1].Count - 1);
-                        qty--;
-
-                        counter = 0;
-                        foreach (var stack in stacks)
-                        {
-                            counter++;
-                            Console.WriteLine($"Stack {counter}");
-                            foreach (var box in stack)
-                            {
-                                Console.Write($"[{box}] - ");
-                            }
-                            Console.WriteLine();
-                        }
+                        var movingbox = stacksPart1[from - 1].Last();
+                        stacksPart1[to - 1].Add(movingbox);
+                        stacksPart1[from - 1].RemoveAt(stacksPart1[from -1].Count - 1);
+                        tempqty--;
                     }
-                    **/
-
 
                     // Part 2
-
-                    while (qty > 0)
+                    tempqty = qty;
+                    while (tempqty > 0)
                     {
-                        var movingIndex = stacks[from - 1].Count - qty;
-                        var movingbox = stacks[from - 1][movingIndex];
-                        Console.WriteLine($"moving {movingbox} from {from} to {to}");
-                        stacks[to - 1].Add(movingbox);
-                        stacks[from - 1].RemoveAt(movingIndex);
-                        qty--;
-
-                        counter = 0;
-                        foreach (var stack in stacks)
-                        {
-                            counter++;
-                            Console.WriteLine($"Stack {counter}");
-                            foreach (var box in stack)
-                            {
-                                Console.Write($"[{box}] - ");
-                            }
-                            Console.WriteLine();
-                        }
+                        var movingIndex = stacksPart2[from - 1].Count - tempqty;
+                        var movingbox = stacksPart2[from - 1][movingIndex];
+                        stacksPart2[to - 1].Add(movingbox);
+                        stacksPart2[from - 1].RemoveAt(movingIndex);
+                        tempqty--;
                     }
-
                 }
             }
 
-            counter = 0;
-            foreach (var stack in stacks)
+            var part1 = "";
+            var part2 = "";
+
+            foreach (var stack in stacksPart1)
             {
-                counter++;
-                Console.WriteLine($"Stack {counter}");
-                foreach (var box in stack)
-                {
-                    Console.Write($"[{box}] - ");
-                }
-                Console.WriteLine();
+                part1 += stack.Last();
             }
 
-            foreach (var stack in stacks)
+            foreach (var stack in stacksPart2)
             {
-                Console.Write(stack.Last());
+                part2 += stack.Last();
             }
 
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day6()
+        public static Tuple<string, string> Day6(string input)
         {
-            var datastream = File.ReadAllText("2022input6.txt");
-            //datastream = "mjqjpqmgbljsphdztnvjfqwrcgsmlb";
-
-            //char[] dataBuffer = { (char)datastream[0],'/', '/', '/', '/', '/', '/', '/', '/', '/', '/', '/', '/', '/' };
-
-
+            var datastream = File.ReadAllText(input);
             var dataBuffer = "";
-
             dataBuffer += datastream[0];
 
-            Console.WriteLine(datastream);
-            Console.WriteLine(datastream.Length);
+            var part1ran = false;
+            var part1 = "";
+            var part2 = "";
 
-            for(var i = 0; i < datastream.Length; i++)
+            for (var i = 0; i < datastream.Length; i++)
             {
                 var repeat = false;    
                 for(var j = 0; j < dataBuffer.Length; j++)
                 {
-                    //Console.WriteLine($"Comparing {c} with {(char)datastream[i]}");
                     if (dataBuffer[j] == datastream[i])
                     {
                         dataBuffer = dataBuffer.Substring(j+1);
@@ -454,25 +354,25 @@ namespace AdventOfCode2022
 
                 dataBuffer += datastream[i];
 
-                if (dataBuffer.Length == 14)
+                if (dataBuffer.Length == 4 && !part1ran)
                 {
-                    Console.Write("Found ");
-                    foreach(var c in dataBuffer)
-                    {
-                        Console.Write(c);
-                    }
-                    Console.Write($" at {i + 1}");
+                    part1 += $"{i + 1}";
+                    part1ran = true;
+                }
+
+                if (dataBuffer.Length == 14 && part1ran)
+                {
+                    part2 += $"{i + 1}";
                     break;
                 }
-                if(dataBuffer.Length > 10)
-                Console.WriteLine($"{i}: {dataBuffer.Length} / {datastream.Length}" );
             }
 
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day7()
+        public static Tuple<string, string> Day7(string input)
         {
-            var terminalOutput = File.ReadAllLines("2022input7.txt");
+            var terminalOutput = File.ReadAllLines(input);
             var listOfDirectories = new Dictionary<string,int>();
             var currentDirectory = "";
 
@@ -499,11 +399,9 @@ namespace AdventOfCode2022
                 {
                     listOfDirectories[currentDirectory] += fileSize;
                 }
-
             }
 
             var updatedSizes = listOfDirectories;
-
             foreach(var (dir1,size1) in listOfDirectories)
             {
                 foreach (var (dir2, size2) in listOfDirectories)
@@ -519,24 +417,20 @@ namespace AdventOfCode2022
             }
 
             var totalSize = 0;
-
             foreach(var (dir,size) in updatedSizes)
             {
                 if (dir == "//") continue;
-                Console.WriteLine($"{dir} - {size}");
                 if (size <= 100000)
                 {
                     totalSize += size;
                 }
             }
-            Console.WriteLine($"Total Size: {totalSize}");
+
+            var part1 = $"{totalSize}";
 
             var targetSize = 30000000;
-
             var remainingSize = 70000000 - listOfDirectories["//"];
-
             var deleteTarget = targetSize - remainingSize;
-
             var deleteTargets = new Dictionary<string, int>();
 
             foreach (var (dir, size) in updatedSizes)
@@ -544,12 +438,10 @@ namespace AdventOfCode2022
                 if (size >= deleteTarget)
                 {
                     deleteTargets.Add(dir, size);
-                    Console.WriteLine($"{dir} - {size}");
                 }
             }
 
             var min = deleteTargets.ElementAt(0).Value;
-
             foreach(var (dir,size) in deleteTargets)
             {
                 if(size < min)
@@ -557,14 +449,16 @@ namespace AdventOfCode2022
                     min = size;
                 }
             }
-            Console.WriteLine($"Delete Target Size: {min}");
 
+            var part2 = $"{min}";
+
+            return new Tuple<string, string>(part1, part2);
         }
 
 
-        public static void Day8()
+        public static Tuple<string, string> Day8(string input)
         {
-            var map = File.ReadAllLines("2022input8.txt");
+            var map = File.ReadAllLines(input);
 
             var maxColHeights = new List<int>();
             var maxRowHeights = new List<int>();
@@ -586,11 +480,9 @@ namespace AdventOfCode2022
 
             for (int i = 1; i < map.Length - 1; i++)
             {
-                var height = int.Parse(map[i][0].ToString().ToString());
                 visibleTrees++;
                 maxRowHeights.Add(int.Parse(map[i][0].ToString()));
 
-                height = int.Parse(map[i][map[i].Length-1].ToString());
                 visibleTrees++;
             }
 
@@ -651,14 +543,11 @@ namespace AdventOfCode2022
                         visibleTrees++;
                     }
                 }
-
-                Console.WriteLine($"{i+1} Total visible trees: {visibleTrees}");
             }
 
-            Console.WriteLine($"Total visible trees: {visibleTrees}");
+            var part1 = $"{visibleTrees}";
 
             var maxScenicScore = 0;
-
             for (int i = 0; i < map.Length; i++)
             {
                 for (int j = 0; j < map[i].Length; j++)
@@ -734,14 +623,14 @@ namespace AdventOfCode2022
                 }
             }
 
+            var part2 = $"{maxScenicScore}";
 
-            Console.WriteLine($"Max Scenic Score: {maxScenicScore}");
-
+            return new Tuple<string, string>(part1, part2);
         }
 
-        public static void Day9()
+        public static Tuple<string, string> Day9(string input)
         {
-            var movements = File.ReadAllLines("2022input9.txt");
+            var movements = File.ReadAllLines(input);
 
             var knots = 10;
             var rope = new List<(int, int)>(knots);
@@ -751,15 +640,15 @@ namespace AdventOfCode2022
                 rope.Add((0, 0));
             }
 
-            var visited = new Dictionary<(int, int), int>();
+            var visitedPart1 = new Dictionary<(int, int), int>();
+            var visitedPart2 = new Dictionary<(int, int), int>();
 
-            visited.Add(rope[knots-1], 1);
+            visitedPart1.Add(rope[knots-1], 1);
+            visitedPart2.Add(rope[knots - 1], 1);
 
-            foreach(var movement in movements)
+            foreach (var movement in movements)
             {
                 var distance = int.Parse(movement.Substring(movement.IndexOf(' ') + 1));
-                Console.WriteLine($"H ({rope[0].Item1},{rope[0].Item2}) - T ({rope[1].Item1},{rope[1].Item2})");
-
 
                 for(var d = distance; d > 0; d--)
                 {
@@ -788,8 +677,6 @@ namespace AdventOfCode2022
                         var xDistance = rope[k - 1].Item1 - rope[k].Item1;
                         var yDistance = rope[k - 1].Item2 - rope[k].Item2;
 
-                        Console.WriteLine($"{xDistance} {yDistance}");
-
                         while (Math.Abs(xDistance) > 1 || Math.Abs(yDistance) > 1)
                         {
                             var knotPos = rope[k];
@@ -797,46 +684,47 @@ namespace AdventOfCode2022
                             // Horizontal correction
                             if (yDistance == 0)
                             {
-                                // Move towards head one step
-                                Console.WriteLine($"Moving Knot {k} x {xDistance / Math.Abs(xDistance)} units");
                                 knotPos.Item1 += xDistance / Math.Abs(xDistance);
                             }
 
                             // Vertical correction
                             if (xDistance == 0)
                             {
-                                // Move towards head one step
-                                Console.WriteLine($"Moving Knot {k} y {yDistance / Math.Abs(yDistance)} units");
                                 knotPos.Item2 += yDistance / Math.Abs(yDistance);
                             }
 
                             // Diagonal correction 1
                             if ((xDistance > 1 || xDistance < -1) && (yDistance != 0))
                             {
-                                // Move towards head one diagonal step
-                                Console.WriteLine($"Moving Knot {k} x {xDistance / Math.Abs(xDistance)} units");
                                 knotPos.Item1 += xDistance / Math.Abs(xDistance);
-                                Console.WriteLine($"Moving Knot {k} y {yDistance / Math.Abs(yDistance)} units");
                                 knotPos.Item2 += yDistance / Math.Abs(yDistance);
                             }
                             else if ((yDistance > 1 || yDistance < -1) && (xDistance != 0))
                             {
-                                // Move towards head one diagonal step
-                                Console.WriteLine($"Moving Knot {k} x {xDistance / Math.Abs(xDistance)} units");
                                 knotPos.Item1 += xDistance / Math.Abs(xDistance);
-                                Console.WriteLine($"Moving Knot {k} y {yDistance / Math.Abs(yDistance)} units");
                                 knotPos.Item2 += yDistance / Math.Abs(yDistance);
                             }
 
                             if(k == knots - 1)
                             {
-                                if (visited.ContainsKey(knotPos))
+                                if (visitedPart2.ContainsKey(knotPos))
                                 {
-                                    visited[knotPos]++;
+                                    visitedPart2[knotPos]++;
                                 }
                                 else
                                 {
-                                    visited.Add(knotPos, 1);
+                                    visitedPart2.Add(knotPos, 1);
+                                }
+                            } 
+                            else if(k == 1)
+                            {
+                                if (visitedPart1.ContainsKey(knotPos))
+                                {
+                                    visitedPart1[knotPos]++;
+                                }
+                                else
+                                {
+                                    visitedPart1.Add(knotPos, 1);
                                 }
                             }
 
@@ -849,15 +737,16 @@ namespace AdventOfCode2022
                 }
             }
 
-            var uniqueVisits = visited.Count;
+            var part1 = $"{visitedPart1.Count}";
+            var part2 = $"{visitedPart2.Count}";
 
-            Console.WriteLine($"The tail visited {uniqueVisits} positions at least once");
+            return new Tuple<string, string>(part1, part2);
         }
 
 
-        public static void Day10()
+        public static Tuple<string, string> Day10(string input)
         {
-            var commands = File.ReadAllLines("2022input10.txt");
+            var commands = File.ReadAllLines(input);
 
             var cycles = 0;
             var register = 1;
@@ -974,17 +863,17 @@ namespace AdventOfCode2022
 
             foreach(var signal in signalsStrenght)
             {
-                Console.WriteLine($"SIGNAL {signal}");
                 sum += signal;
             }
 
-            Console.WriteLine($"SUm of signals: {sum}");
-
+            var part1 = $"{sum}";
+            var part2 = "";
             foreach (var row in crt)
             {
-                Console.WriteLine(row);
+                part2 += row + "\n";
             }
 
+            return new Tuple<string, string>(part1, part2);
         }
     }
 }
