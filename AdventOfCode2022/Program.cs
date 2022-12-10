@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 namespace AdventOfCode2022
 {
@@ -7,7 +8,8 @@ namespace AdventOfCode2022
     {
         static void Main(string[] args)
         {
-            var samples = 100;
+            const int DAYS = 10;
+            int samples = 100;
 
             if(args?.Length != 0)
             {
@@ -16,7 +18,7 @@ namespace AdventOfCode2022
 
             Console.WriteLine("Advent of Code 2022");
             Console.WriteLine("++++++++++++++++++++++++++++++++++++++++");
-            Console.WriteLine($"Select your day (1 - {AoC2022.DAYS} or -1 to benchmark all): ");
+            Console.WriteLine($"Select your day (1 - {DAYS} or -1 to benchmark all): ");
 
             var day = 0;
 
@@ -25,15 +27,13 @@ namespace AdventOfCode2022
                 Console.WriteLine("Invalid input");
             }
 
-            var solver = new AoC2022();
-
             if (day == -1)
             {
-                BenchmarkAll2022(10, solver);
+                BenchmarkAll2022(samples, DAYS);
             }
             else
             {
-                var result = Execute2022Day(day, solver);
+                var result = Execute2022Day(day);
 
                 Console.WriteLine("------------------------------------");
                 Console.WriteLine($"Day {day} in {result.Item1:N3}us ");
@@ -43,12 +43,12 @@ namespace AdventOfCode2022
             }
         }
 
-        public static (double, Tuple<string, string>) Execute2022Day(int day, AoC2022 solver)
+        public static (double, Tuple<string, string>) Execute2022Day(int day)
         {
-
+            var type = Type.GetType($"AdventOfCode2022.Day{day}");
             var stopWatch = new Stopwatch();
             stopWatch.Start();
-            var results = (Tuple<string, string>)typeof(AoC2022).GetMethod($"Day{day}")?.Invoke(solver, new[] { $"2022input{day}.txt" });
+            var results = (Tuple<string, string>)Type.GetType($"AdventOfCode2022.Day{day:D2}")?.GetMethod("Solve")?.Invoke(null,new[] { $"2022input{day}.txt" });
             stopWatch.Stop();
             double timestamp = stopWatch.ElapsedTicks;
             double microseconds = 1_000_000.0 * timestamp / Stopwatch.Frequency;
@@ -56,17 +56,17 @@ namespace AdventOfCode2022
             return (microseconds, results);
         }
 
-        public static async void BenchmarkAll2022(int samples, AoC2022 solver)
+        public static async void BenchmarkAll2022(int samples, int days)
         {
             var scores = new List<double>();
             var solutions = new List<Tuple<string, string>>();
 
-            for(var i = 0; i < AoC2022.DAYS; i++)
+            for(var i = 0; i < days; i++)
             {
                 scores.Add(0);
                 for(int j = 0; j < samples; j++)
                 {
-                    var result = Execute2022Day(i+1, solver);
+                    var result = Execute2022Day(i+1);
                     scores[i] += result.Item1;
                     if(j == 0)
                     {
@@ -81,7 +81,7 @@ namespace AdventOfCode2022
 
             using StreamWriter benchmarksFile = new("BenchmarkResults.txt");
 
-            for(var i = 0; i < AoC2022.DAYS; i++)
+            for(var i = 0; i < days; i++)
             {
                 var lines = "------------------------------------\n";
                 lines += $"Day {i + 1} solved in {scores[i]:N3}us (avg.)\n";
