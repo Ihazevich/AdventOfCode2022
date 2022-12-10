@@ -1,11 +1,11 @@
-﻿using Spectre.Console;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Terminal.Gui;
 
 namespace AdventOfCode2022
 {
@@ -852,6 +852,139 @@ namespace AdventOfCode2022
             var uniqueVisits = visited.Count;
 
             Console.WriteLine($"The tail visited {uniqueVisits} positions at least once");
+        }
+
+
+        public static void Day10()
+        {
+            var commands = File.ReadAllLines("2022input10.txt");
+
+            var cycles = 0;
+            var register = 1;
+
+            var runCpu = true;
+            var commandRunning = false;
+            var commandCycle = 0;
+            var lastCommand = 0;
+            var lastLine = 0;
+            var firstSignal = false;
+
+            var signalsStrenght = new List<int>();
+
+            var crtWidth = 40;
+            var crtHeight = 6;
+
+            var crt = new List<string>(6);
+            var currentRow = 0;
+            var pixelPos = 0;
+
+            crt.Add("");
+
+            while(runCpu)
+            {
+                cycles++;
+
+                if (commandRunning)
+                {
+                    if(commandCycle%2 == 0)
+                    {
+                        register += lastCommand;
+
+
+                        if (lastLine == commands.Length)
+                        {
+                            runCpu = false;
+                            break;
+                        }
+                        var command = commands[lastLine];
+
+                        if (command.StartsWith("a"))
+                        {
+                            lastCommand = int.Parse(command.Substring(5));
+                            commandRunning = true;
+                            commandCycle = 1;
+                        }
+                        else
+                        {
+                            commandRunning = false;
+                        }
+
+                        lastLine++;
+                    }
+                    else
+                    {
+                        commandCycle--;
+                    }
+                }
+                else
+                {
+                    if (lastLine == commands.Length)
+                    {
+                        runCpu = false;
+                        break;
+                    }
+                    var command = commands[lastLine];
+                    if (command.StartsWith("a"))
+                    {
+                        lastCommand = int.Parse(command.Substring(5));
+                        commandRunning = true;
+                        commandCycle = 1;
+                    }
+                    else
+                    {
+                        commandRunning = false;
+                    }
+                    lastLine++;
+                }
+
+                if (cycles % 20 == 0 && firstSignal)
+                {
+                    signalsStrenght.Add(cycles * register);
+                    firstSignal = false;
+                }
+                else if ((cycles - 20) % 40 == 0)
+                {
+                    signalsStrenght.Add(cycles * register);
+                }
+                
+                if (pixelPos == register - 1 || pixelPos == register || pixelPos == register + 1)
+                {
+                    crt[currentRow] += "#"; 
+                }
+                else
+                {
+                    crt[currentRow] += ".";
+                }
+                
+                pixelPos++;
+                if(pixelPos%crtWidth == 0) 
+                {
+                    pixelPos = 0;
+                    currentRow++;
+                    crt.Add("");
+                    if (currentRow >= crtHeight)
+                    {
+                        break;
+                    }
+                }
+
+            }
+
+            var sum = 0;
+
+            foreach(var signal in signalsStrenght)
+            {
+                Console.WriteLine($"SIGNAL {signal}");
+                sum += signal;
+            }
+
+            Console.WriteLine($"SUm of signals: {sum}");
+
+            foreach (var row in crt)
+            {
+                Console.WriteLine(row);
+            }
+
         }
     }
 }
