@@ -8,7 +8,7 @@ namespace AdventOfCode2022
     {
         static void Main(string[] args)
         {
-            const int DAYS = 11;
+            const int DAYS = 12;
             int samples = 100;
 
             if(args?.Length != 0)
