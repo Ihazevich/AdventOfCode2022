@@ -38,6 +38,7 @@ namespace AdventOfCode2022
                 Console.WriteLine("------------------------------------");
                 Console.WriteLine($"Day {day} in {result.Item1:N3}us ");
                 Console.WriteLine("------------------------------------");
+                
                 Console.WriteLine($"Part 1: {result.Item2.Item1}");
                 Console.WriteLine($"Part 2: {result.Item2.Item2}");
             }

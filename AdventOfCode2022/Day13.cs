@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -17,29 +18,41 @@ namespace AdventOfCode2022
     {
         public static int sum = 0;
         public static int total = 0;
-        public static bool verbose = true;
+        public static bool verbose = false;
+        public static bool isPart2 = false;
 
         public static Tuple<string, string> Solve(string input)
         {
-            var packets = File.ReadAllLines(input);
-            var pairs = 0;
+            var packets = File.ReadAllLines(input).ToList();
+
+
+            packets.Add("");
+            packets.Add("[[6]]");
+            packets.Add("[[2]]");
+
             var part1 = "";
             var part2 = "";
-            var sumOfRight = 0;
 
             var dataPackets = new List<DataPacket>();
+            var orderedDataPackets = new List<DataPacket>();
 
-            for (var i = 0; i < packets.Length;i++)
+
+            for (var i = 0; i < packets.Count; i++)
             {
+                var packet = packets[i].Replace(" ", "");
+                if (verbose) Console.WriteLine($"{packet}");
+
                 int packetIndex = (i + 1) / 3;
                 if ((i + 1) % 3 == 0)
                 {
-                    ComparePackets(dataPackets[dataPackets.Count-2], dataPackets.Last());
-                    Console.WriteLine("-----------");
+                    var cpackets = ComparePackets(dataPackets[dataPackets.Count - 2], dataPackets.Last());
+                    orderedDataPackets.Add(cpackets.Item1);
+                    orderedDataPackets.Add(cpackets.Item2);
+                    if (verbose) Console.WriteLine($"{cpackets.Item1.Name}\n{cpackets.Item2.Name}");
+                    if (verbose) Console.WriteLine("-----------");
                     continue;
                 }
-                Console.WriteLine($"{packets[i]}");
-                dataPackets.Add(new DataPacket() { Index = (i + 3) / 3, CurrentLevel = -1 });
+                dataPackets.Add(new DataPacket() { Index = (i + 3) / 3, CurrentLevel = -1, Name = packet });
                 var activePacketNode = new DataNode() { Level = -1 };
 
                 var level = 0;
@@ -47,8 +60,6 @@ namespace AdventOfCode2022
 
                 dataPackets.Last().Add(activePacketNode);
 
-                var firstClose = false;
-                var packet = packets[i].Replace(" ", "");
 
                 for (var j = 0; j < packet.Length; j++)
                 {
@@ -63,7 +74,7 @@ namespace AdventOfCode2022
                         activePacketNode.FirstChild = activePacketNode.FirstChild == null ? n : activePacketNode.FirstChild;
                         activePacketNode = n;
                         level++;
-                        if (packet[j+1] == ']')
+                        if (packet[j + 1] == ']')
                         {
                             var n2 = new DataNode()
                             {
@@ -83,14 +94,12 @@ namespace AdventOfCode2022
                     }
                     else if (packet[j] == ']')
                     {
-                        firstClose = true;
                         level--;
                         activePacketNode.Next = j < packet.Length - 1 && packet[j + 1] == ',';
                         activePacketNode = activePacketNode?.Parent;
                     }
                     else if (packet[j] != ',')
                     {
-                        firstClose = true;
                         var checkClose = packet.IndexOf(']', j);
                         var checkOpen = packet.IndexOf('[', j);
                         checkOpen = checkOpen == -1 ? packet.Length : checkOpen;
@@ -114,26 +123,36 @@ namespace AdventOfCode2022
                         j = nextStop - 1;
                     }
                 }
-
-                if (i == packets.Length - 1)
+                if (i == packets.Count - 1)
                 {
-                    ComparePackets(dataPackets[dataPackets.Count - 2], dataPackets.Last());
-                    continue;
+                    var cpackets = ComparePackets(dataPackets[dataPackets.Count - 2], dataPackets.Last());
+                    orderedDataPackets.Add(cpackets.Item1);
+                    orderedDataPackets.Add(cpackets.Item2);
                 }
+
             }
+            part1 = $"Sum:{sum} Total:{total}";
+            if (verbose) Console.WriteLine(part1);
+            isPart2 = true;
+            orderedDataPackets.Sort();
+            if (verbose) Console.WriteLine("++++++++++++++++");
+            if (verbose) orderedDataPackets.ForEach(p => Console.WriteLine(p.Name));
 
             part1 = $"Sum:{sum} Total:{total}";
+
+            var indexesMultiplied = (orderedDataPackets.FindIndex(p => p.Name == "[[2]]") + 1) * (orderedDataPackets.FindIndex(p => p.Name == "[[6]]") + 1);
+
+
+            part2 = $"{indexesMultiplied}";
             return new Tuple<string, string>(part1, part2);
 
         }
 
 
+
         private static (DataPacket, DataPacket) ComparePackets(DataPacket p1, DataPacket p2)
         {
-            if (p1.Ended)
-            {
-                return (p1, p2);
-            }
+            if (p1.Compared || p2.Compared) Console.WriteLine($"Danger Mr. Robinson \n{(p1.Compared ? p1.Name : p2.Name)}\n is doing illegal things");
 
             DataNode? node1;
             DataNode? node2;
@@ -213,6 +232,7 @@ namespace AdventOfCode2022
 
             if (p1.Ended)
             {
+                p1.Compared = p2.Compared = true;
                 return (p1, p2);
             }
 
@@ -293,6 +313,7 @@ namespace AdventOfCode2022
             
             if (p1.Ended)
             {
+                p1.Compared = p2.Compared = true;
                 return (p1, p2);
             }
 
@@ -302,20 +323,21 @@ namespace AdventOfCode2022
                 {
                     if(p1.Value == p2.Value)
                     {
-                        Console.WriteLine($"Equals [{p1.Value}]-[{p2.Value}]");
+                        if (verbose) Console.WriteLine($"Equals [{p1.Value}]-[{p2.Value}]");
 
                         if (p1.CurrentLevel > p2.CurrentLevel)
                         {
                             p1.Ended = true;
-                            Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
+                            if (verbose) Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
                             return (p1, p2);
                         }
                         else if (p1.CurrentLevel < p2.CurrentLevel)
                         {
                             p1.Ended = true;
-                            sum += p1.Index;
-                            total++;
-                            Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                            sum += isPart2 ? 0 : p1.Index;
+                            total += isPart2 ? 0 : 1;
+                            if (verbose) Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                            p1.Ordered = true;
                             return (p1, p2);
                         }
 
@@ -323,16 +345,17 @@ namespace AdventOfCode2022
                         if ((p1.HasNext && !p2.HasNext))
                         {
                             p1.Ended = true;
-                            Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
+                            if (verbose) Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
                             return (p1, p2);
                         }
 
                         if ((!p1.HasNext && p2.HasNext))
                         {
                             p1.Ended = true;
-                            sum += p1.Index;
-                            total++;
-                            Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                            sum += isPart2 ? 0 : p1.Index;
+                            total += isPart2 ? 0 : 1;
+                            if (verbose) Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                            p1.Ordered = true;
                             return (p1, p2);
                         }
 
@@ -345,81 +368,52 @@ namespace AdventOfCode2022
                     else if (p1.Value > p2.Value)
                     {
                         p1.Ended = true;
-                        Console.WriteLine($"Left higher, not right [{p1.Value}]-[{p2.Value}]");
+                        if (verbose) Console.WriteLine($"Left higher, not right [{p1.Value}]-[{p2.Value}]");
                         return (p1, p2);
                     }
                     else if (p1.Value < p2.Value)
                     {
                         p1.Ended = true;
-                        sum += p1.Index;
-                        total++;
-                        Console.WriteLine($"Left lower, is right [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                        sum += isPart2 ? 0 : p1.Index;
+                        total += isPart2 ? 0 : 1;
+                        if (verbose) Console.WriteLine($"Left lower, is right [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                        p1.Ordered = true;
                         return (p1, p2);
                     }
                     else if(p1.Value == null )
                     {
                         p1.Ended = true;
-                        sum += p1.Index;
-                        total++;
-                        Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                        sum += isPart2 ? 0 : p1.Index;
+                        total += isPart2 ? 0 : 1;
+                        if (verbose) Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                        p1.Ordered = true;
                         return (p1, p2);
                     }
                     else if (p2.Value == null)
                     {
                         p1.Ended = true;
-                        Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
+                        if (verbose) Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
                         return (p1, p2);
                     }
                 }
                 else
                 {
                     p1.Ended = true;
-                    sum += p1.Index;
-                    total++;
-                    Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                    sum += isPart2 ? 0 : p1.Index;
+                    total += isPart2 ? 0 : 1;
+                    if (verbose) Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}]-[{p2.Value}] +{p1.Index}={sum}");
+                    p1.Ordered = true;
                     return (p1, p2);
                 }
             }
             else
             {
                 p1.Ended = true;
-                Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
+                if (verbose) Console.WriteLine($"Right ended, not right [{p1.Value}]-[{p2.Value}]");
                 return (p1, p2);
             }
-            /**
-            if (p2.Value == null )
-            {
-                p1.Ended = true;
-                Console.WriteLine($"Right ended, not right [{p1.Value}-{p2.Value}]");
-                return (p1, p2);
-            } 
-            else if (p1.Value == null )
-            {
-                p1.Ended = true;
-                sum += p1.Index;
-                Console.WriteLine($"Left ended, is right {p1.Index} [{p1.Value}-{p2.Value}] +{p1.Index}={sum}");
-                return (p1, p2);
-            } 
-            else if (p1.Value > p2.Value)
-            {
-                p1.Ended = true;
-                Console.WriteLine($"Left higher, not right [{p1.Value}-{p2.Value}]");
-                return (p1, p2);
-            }
-            else if (p1.Value < p2.Value)
-            {
-                p1.Ended = true;
-                sum += p1.Index;
-                Console.WriteLine($"Left lower, is right [{p1.Value}-{p2.Value}] +{p1.Index}={sum}");
-                return (p1, p2);
-            }
-            Console.WriteLine($"Equals [{p1.Value}-{p2.Value}]");
-            p1.Value = null; p2.Value = null;
-            p1.FoundValue = false; p2.FoundValue = false;
 
-            (p1, p2) = ComparePackets(p1, p2);
-            **/
-
+            p1.Compared = p2.Compared = true;
             return (p1, p2);
         }
 
@@ -435,17 +429,20 @@ namespace AdventOfCode2022
 
         }
 
-        private class DataPacket
+        private class DataPacket : IComparable<DataPacket> 
         {
             public List<DataNode> Nodes { get; set; }
             public Dictionary<int,int> LevelIndex { get; set; }
-            public int LastLevel { get; set; }
             public int CurrentLevel { get; set; }
             public bool Ended { get; set; }
             public int Index { get; set; }
             public int? Value { get; set; }
             public bool FoundValue { get; set; }
             public bool HasNext { get; set; }
+            public bool Ordered { get; set; }
+            public string Name { get; set; } 
+            public bool Printed { get; set; }
+            public bool Compared { get; set; }
 
             public DataPacket()
             {
@@ -457,6 +454,46 @@ namespace AdventOfCode2022
             public void Add(DataNode node)
             {
                 Nodes.Add(node);
+            }
+
+            public int CompareTo(DataPacket? other)
+            {
+                if (verbose) Console.WriteLine($"Comparing...");
+                if (verbose) Console.WriteLine($"1 = {this.Name}");
+                if (verbose) Console.WriteLine($"2 = {other?.Name}");
+
+                if (other == null)
+                {
+                    return 1;
+                }
+                if (other.Name.Equals(this.Name))
+                {
+                    if (verbose) Console.WriteLine("EQUALS");
+                    return 0;
+                }
+                Reset();
+                other.Reset();
+                var result = ComparePackets(this, other);
+                if (result.Item1.Ordered)
+                {
+                    if (verbose) Console.WriteLine("1 is LESS");
+                    return -1;
+                }
+                if (verbose) Console.WriteLine("2 is LESS");
+                return 1;
+            }
+
+            private void Reset()
+            {
+                FoundValue = false;
+                CurrentLevel = -1;
+                Ended = false;
+                Value = null;
+                Ordered = false;
+                LevelIndex = new Dictionary<int, int> { { -1, 0 } };
+                Nodes.ForEach(n => n.Explored = false);
+                Printed = false;
+                Compared = false;
             }
         }
 
