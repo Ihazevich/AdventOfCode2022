@@ -11,21 +11,20 @@ namespace AdventOfCode2022
             const int DAYS = 14;
             int samples = 100;
 
-            if(args?.Length != 0)
-            {
-                int.TryParse(args?[0], out samples);
-            }
+            var day = 0;
 
             Console.WriteLine("Advent of Code 2022");
             Console.WriteLine("++++++++++++++++++++++++++++++++++++++++");
-            Console.WriteLine($"Select your day (1 - {DAYS} or -1 to benchmark all): ");
 
-            var day = 0;
-
-            while (!int.TryParse(Console.ReadLine(), out day))
+            if(day == 0)
             {
-                Console.WriteLine("Invalid input");
+                Console.WriteLine($"Select your day (1 - {DAYS} or -1 to benchmark all): ");
+                while (!int.TryParse(Console.ReadLine(), out day))
+                {
+                    Console.WriteLine("Invalid input");
+                }
             }
+
 
             if (day == -1)
             {
