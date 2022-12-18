@@ -8,7 +8,7 @@ namespace AdventOfCode2022
     {
         static void Main(string[] args)
         {
-            const int DAYS = 14;
+            const int DAYS = 15;
             int samples = 100;
 
             var day = 0;
