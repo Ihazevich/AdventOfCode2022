@@ -8,7 +8,7 @@ namespace AdventOfCode2022
     {
         static void Main(string[] args)
         {
-            const int DAYS = 15;
+            const int DAYS = 16;
             int samples = 100;
 
             var day = 0;
@@ -25,6 +25,7 @@ namespace AdventOfCode2022
                 }
             }
 
+            Console.WriteLine($"Starting at: {DateTime.Now}");
 
             if (day == -1)
             {
