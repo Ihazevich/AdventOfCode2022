@@ -1,14 +1,10 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Reflection;
+﻿using System.Diagnostics;
 
 namespace AdventOfCode2022
 {
     internal class Day16
     {
-        public static bool Verbose = true;
+        public static bool Verbose = false;
 
         public static int MaxWorthValves = 0;
         public static int MaxTotalP1 = 0;
@@ -85,7 +81,7 @@ namespace AdventOfCode2022
             if (Verbose) Console.WriteLine($"Starting Part 2 at {valveData[startIndex].Name}");
             int[] start = { startIndex, startIndex };
             int[] prev = { -1, -1 };
-            Valve.SearchBestPathPart2(valvesP2, start, prev, 0, 0, 0, 0, 0);
+            Valve.SearchBestPathPart2(valvesP2, start, prev, 0, 0, 0, 0);
             if (Verbose) Console.WriteLine($"Max: {MaxTotalP2} | Search Space: {Branches:N0}");
 
             part2 = $"{MaxTotalP2} Search Space:{Branches:N0}";
@@ -288,7 +284,7 @@ namespace AdventOfCode2022
                 }
             }
 
-            public static void SearchBestPathPart2(Valve[] valves, int[] cIndex, int[] pIndex, int min, int total,  int oValves, int cFlowRate, int ticktickBoom)
+            public static void SearchBestPathPart2(Valve[] valves, int[] cIndex, int[] pIndex, int min, int total,  int oValves, int cFlowRate)
             {
                 Branches++;
 
@@ -301,7 +297,6 @@ namespace AdventOfCode2022
                 }
                 
                 min++;
-                ticktickBoom++;
 
                 if (min > 26)
                 {
@@ -359,7 +354,6 @@ namespace AdventOfCode2022
                     valves[cIndex[0]].Opened = true;
                     oValves++;
                     openedNow[0] = true;
-                    ticktickBoom = 0;
                 }
 
                 if (!valves[cIndex[1]].Opened)
@@ -369,10 +363,9 @@ namespace AdventOfCode2022
                     valves[cIndex[1]].Opened = true;
                     oValves++;
                     openedNow[1] = true;
-                    ticktickBoom = 0;
                 }
 
-                if (oValves == MaxWorthValves || ticktickBoom > 4)
+                if (oValves == MaxWorthValves)
                 {
                     total += cFlowRate * (26 - min);
                     MaxTotalP2 = Math.Max(total, MaxTotalP2);
@@ -500,8 +493,7 @@ namespace AdventOfCode2022
                             min,
                             total,
                             newOValves,
-                            newFlowRate,
-                            ticktickBoom
+                            newFlowRate
                         );
                         
                         explored.Add((choiceMan.MoveTo, choiceElephant.MoveTo));
