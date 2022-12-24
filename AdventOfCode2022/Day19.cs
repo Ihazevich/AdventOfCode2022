@@ -11,9 +11,10 @@ namespace AdventOfCode2022
 {
     internal class Day19
     {
+        public static Object _lock = new Object();
         public static Stopwatch Watch = new Stopwatch();
 
-        public const int MINUTES = 24;
+        public static int MINUTES = 24;
         public const int MATERIALS = 5;
 
         public static int Branches = 0;
@@ -40,14 +41,14 @@ namespace AdventOfCode2022
                 var mIndex = cMaterials[1].IndexOf(" ore");
                 var amount = cMaterials[1].Substring(costIndex, mIndex - costIndex);
                 robotOre.ConstructionMaterials[(int)Material.ORE] = int.Parse(amount);
-                newBlueprint.Robots[0] = robotOre;
+                newBlueprint.Robots[0] = robotOre.ConstructionMaterials;
 
                 var robotClay = new Robot(Material.CLAY);
                 costIndex = cMaterials[2].IndexOf("costs ") + 5;
                 mIndex = cMaterials[2].IndexOf("ore");
                 amount = cMaterials[2].Substring(costIndex, mIndex - costIndex);
                 robotClay.ConstructionMaterials[(int)Material.ORE] = int.Parse(amount);
-                newBlueprint.Robots[1] = robotClay;
+                newBlueprint.Robots[1] = robotClay.ConstructionMaterials;
 
                 var robotObs = new Robot(Material.OBSIDIAN);
                 costIndex = cMaterials[3].IndexOf("costs ") + 5;
@@ -58,7 +59,7 @@ namespace AdventOfCode2022
                 mIndex = cMaterials[3].IndexOf("clay");
                 amount = cMaterials[3].Substring(costIndex, mIndex - costIndex);
                 robotObs.ConstructionMaterials[(int)Material.CLAY] = int.Parse(amount);
-                newBlueprint.Robots[2] = robotObs;
+                newBlueprint.Robots[2] = robotObs.ConstructionMaterials;
 
                 var robotGeo = new Robot(Material.GEODE);
                 costIndex = cMaterials[4].IndexOf("costs ") + 5;
@@ -69,30 +70,39 @@ namespace AdventOfCode2022
                 mIndex = cMaterials[4].IndexOf("obsidian");
                 amount = cMaterials[4].Substring(costIndex, mIndex - costIndex);
                 robotGeo.ConstructionMaterials[(int)Material.OBSIDIAN] = int.Parse(amount);
-                newBlueprint.Robots[3] = robotGeo;
+                newBlueprint.Robots[3] = robotGeo.ConstructionMaterials;
 
                 availableBlueprints.Add(newBlueprint);
             }
 
             var total = 0;
-
-            //foreach(var blueprint in availableBlueprints)
+            
             Parallel.For(0, availableBlueprints.Count, b =>
-            //for(var b = 0; b < availableBlueprints.Count; b++)
             {
-                //Branches = 0;
-                //Watch.Start();
-                Console.WriteLine($"Initiaing Blueprint {availableBlueprints[b].Id}");
                 var factory = new Factory(availableBlueprints[b]);
                 factory.NextCycle();
                 Interlocked.Add(ref total, availableBlueprints[b].QualityLevel);
-                //Console.WriteLine(availableBlueprints[b].BestLog);
                 Console.WriteLine($"{availableBlueprints[b].Id} Quality: {availableBlueprints[b].QualityLevel:N0} B:{availableBlueprints[b].Branches:N0}");
             });
-
-
             part1 = $"{total}";
 
+            total = 1;
+            MINUTES = 32;
+            
+            Parallel.For(0, 3, b =>
+            {
+                availableBlueprints[b].MaxGeodes = 0;
+                availableBlueprints[b].Branches = 0;
+                var factory = new Factory(availableBlueprints[b]);
+                factory.NextCycle();
+                lock (_lock)
+                {
+                    total *= availableBlueprints[b].MaxGeodes;
+                }
+                Console.WriteLine($"{availableBlueprints[b].Id} Geodes: {availableBlueprints[b].MaxGeodes:N0} B:{availableBlueprints[b].Branches:N0}");
+            });
+            part2 = $"{total}";
+            
             return new Tuple<string, string>(part1, part2);       
         }
 
@@ -119,15 +129,14 @@ namespace AdventOfCode2022
         public class Blueprint
         {
             public int Id;
-            public Robot[] Robots = new Robot[MATERIALS];
+            public int[][] Robots = new int[MATERIALS][];
             public int MaxGeodes;
             public int QualityLevel => MaxGeodes * Id;
-            //public List<string> BestLog;
             public ulong Branches;
 
             public Blueprint()
             {
-                Robots[4] = new Robot(Material.NONE);
+                Robots[4] = new int[5];
             }
         }
 
@@ -141,7 +150,6 @@ namespace AdventOfCode2022
             public int[] MaterialStock = new int[MATERIALS];
 
             public int CurrentMinutes;
-            //public List<string> Log = new();
 
             public Factory(Blueprint activeBlueprint)
             {
@@ -149,10 +157,8 @@ namespace AdventOfCode2022
                 ActiveBlueprint = activeBlueprint;
             }
 
-            public Factory(Blueprint activeBlueprint, int minutes)
+            public Factory()
             {
-                CurrentMinutes = minutes;
-                ActiveBlueprint = activeBlueprint;
             }
 
             public void Collect()
@@ -160,34 +166,47 @@ namespace AdventOfCode2022
                 for(var r = 0; r < MATERIALS-1; r++)
                 {
                     MaterialStock[r] += ActiveRobots[r];
-                    //Log.Add($"{ActiveRobots[r]} {((Material)r).ToString()}-collecting robot collects {ActiveRobots[r]} ore; you now have {MaterialStock[r]} {((Material)r).ToString()}");
                 }
-
-                //var prevMax = ActiveBlueprint.MaxGeodes;
                 ActiveBlueprint.MaxGeodes = Math.Max(MaterialStock[(int)Material.GEODE], ActiveBlueprint.MaxGeodes);
-                /*if (ActiveBlueprint.MaxGeodes != prevMax)
-                {
-                    ActiveBlueprint.BestLog = new();
-                    Log.ForEach(l => {
-                        Console.WriteLine(l);
-                        ActiveBlueprint.BestLog.Add(l);
-                    });
-                }*/
             }
 
             public void Build()
-            {         
+            {
+                var building = 0;
                 for(var r = 0; r < MATERIALS; r++)  
                 {
-                    var canBuild = true;
-
+                    //var canBuild = true;
+                    BuildingRobot[r] = true;
                     for (var c = 0; c < MATERIALS; c++)
                     {
-                        if (ActiveBlueprint.Robots[r].ConstructionMaterials[c] > MaterialStock[c])
-                            canBuild = false;
+                        if (ActiveBlueprint.Robots[r][c] > MaterialStock[c])
+                        {
+                            BuildingRobot[r] = false;
+                            building++;
+                        }
+                            //canBuild = false;
                     }
+                }
 
-                    if(canBuild)
+                if (BuildingRobot[(int)Material.GEODE])
+                {
+                    BuildingRobot = new bool[MATERIALS];
+                    BuildingRobot[(int)Material.GEODE] = true;
+                }
+                else if (BuildingRobot[(int)Material.OBSIDIAN])
+                {
+                    BuildingRobot = new bool[MATERIALS];
+                    BuildingRobot[(int)Material.OBSIDIAN] = true;
+                }                
+                else if (CurrentMinutes > 3*MINUTES/4)
+                {
+                    BuildingRobot[(int)Material.ORE] = false;
+                    BuildingRobot[(int)Material.CLAY] = false;
+                }
+                
+                for (var r = 0; r < MATERIALS; r++)
+                {
+                    if (BuildingRobot[r])
                     {
                         Branch(r);
                     }
@@ -197,30 +216,17 @@ namespace AdventOfCode2022
             public void Branch(int robotType)
             {
                 ActiveBlueprint.Branches++;
-                /*if (Branches % 15_000_000 == 0)
-                {
-                    Watch.Stop();
-                    double seconds = Watch.ElapsedTicks / (double)Stopwatch.Frequency;
-                    Console.WriteLine($" - {ActiveBlueprint.Id}-{Branches:N0}: {ActiveBlueprint.MaxGeodes:N0} in {seconds:N4}s.");
-                    Watch.Restart();
-                }*/
-                var factory = new Factory(ActiveBlueprint, CurrentMinutes);
-                //Log.ForEach(l => { factory.Log.Add(new string(l)); });
+                var factory = new Factory();
+                factory.ActiveBlueprint= ActiveBlueprint;
+                factory.CurrentMinutes= CurrentMinutes;
                 Array.Copy(ActiveRobots, factory.ActiveRobots, MATERIALS);
                 Array.Copy(MaterialStock, factory.MaterialStock, MATERIALS);
 
-
-                //var s = $"Spend ";
-                for (var c = 0; c < MATERIALS; c++)
+                for (var c = 0; c < MATERIALS-1; c++)
                 {
-                    if (factory.ActiveBlueprint.Robots[robotType].ConstructionMaterials[c] == 0) continue;
-                    factory.MaterialStock[c] -= factory.ActiveBlueprint.Robots[robotType].ConstructionMaterials[c];
-                    //s += $"{factory.ActiveBlueprint.Robots[robotType].ConstructionMaterials[c]} {((Material)c).ToString()} ";
-                    //if (factory.MaterialStock[c] < 0) throw new Exception();
+                    // if (factory.ActiveBlueprint.Robots[robotType].ConstructionMaterials[c] == 0) continue;
+                    factory.MaterialStock[c] -= factory.ActiveBlueprint.Robots[robotType][c];
                 }
-                //s += $"to start building a {((Material)robotType).ToString()}-collecting robot";
-
-                //factory.Log.Add(s);
                 factory.BuildingRobot[robotType] = true;
 
                 factory.Collect();
@@ -231,38 +237,31 @@ namespace AdventOfCode2022
             public void NextCycle()
             {
                 CurrentMinutes++;
+
                 var maxGeodes = MaterialStock[(int)Material.GEODE];
-                var maxActive = ActiveRobots[(int)Material.GEODE];
+
                 for(var m = CurrentMinutes; m <= MINUTES; m++)
                 {
-                    maxActive += (m - CurrentMinutes + 1) % 2;
-                    maxGeodes += maxActive;
+                    maxGeodes += ActiveRobots[(int)Material.GEODE] + (m - CurrentMinutes);
                 }
-                if (maxGeodes < ActiveBlueprint.MaxGeodes) return;
-               
-                if (CurrentMinutes > MINUTES)
+
+                if (maxGeodes < ActiveBlueprint.MaxGeodes || CurrentMinutes > MINUTES)
                 {
                     return;
                 }
-                //Log.Add($"== Minute {CurrentMinutes} ==");
-                //DeployRobots();
                 Build();
             }
 
             public void Deploy()
             {
-                //var deployed = false;
                 for(var r = 0; r < MATERIALS; r++)
                 {
                     if (BuildingRobot[r])
                     {
-                        //if (deployed) throw new Exception();
                         ActiveRobots[r]++;
                         BuildingRobot[r] = false;
-                        // Log.Add($"The new {((Material)r).ToString()}-collecting robot is ready; you now have {ActiveRobots[r]} of them\n");
                     }
                 }
-
             }
         }
     }
